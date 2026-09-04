@@ -1,56 +1,131 @@
-# Employee Data Portal
+# Modern Invoicing System
 
-A Django + DRF project for browsing, filtering, caching, and exporting a large employee dataset.
+A simplified full-stack invoicing system built with React, Express, and MongoDB/Mongoose.
 
 ## Features
 
-- Department, Position, and Employee schema with indexed search/filter fields.
-- Paginated REST API using `select_related()` for foreign-key optimization.
-- Search by name, email, and department with date-of-joining range filters.
-- CSV, Excel, and PDF export endpoints.
-- Redis cache support through Django's cache framework, with local-memory fallback.
-- Dynamic frontend table with debounced search, date filters, pagination, and export buttons.
-- Bulk seed command for 250,000+ employee rows.
+- Client create, edit, delete, and list scoped to the current mock user
+- Invoice create, list, status/client/date filters, detail view, and paid status action
+- Dynamic invoice line items with subtotal, tax, and total calculation
+- Premium-only logo upload and invoice branding
+- Basic validation, error handling, CORS, Helmet, upload limits, and user scoping
 
-## Setup
+## Tech Stack
+
+- Frontend: React + Vite + plain CSS
+- Backend: Node.js + Express
+- Database: MongoDB with Mongoose
+- Uploads: Multer with image-only validation and 2MB limit
+
+## Mock Users
+
+The app uses request headers instead of full authentication so the assignment can focus on full-stack fundamentals.
+
+- Free user: `x-user-id: demo-owner`, `x-user-role: free`
+- Premium user: `x-user-id: demo-owner`, `x-user-role: premium`
+
+The UI has a Free/Premium toggle in the header.
+
+## Run Backend Locally
+
+1. Install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+2. Copy environment values:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+3. Start MongoDB locally or set `MONGODB_URI` to a MongoDB Atlas connection string.
+
+4. Start the backend:
+
+   ```bash
+   npm start
+   ```
+
+The API runs on `http://localhost:4000`.
+
+## Run Full App Locally
+
+Start MongoDB locally or set `MONGODB_URI`, then run:
 
 ```bash
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
-copy .env.example .env
+npm run dev
 ```
 
-Set the `.env` values in your deployment environment. For MySQL, create the database first:
+Open `http://localhost:5173`.
 
-```sql
-CREATE DATABASE employee_portal CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
+## Environment Variables
 
-Run migrations and seed data:
+Backend:
 
 ```bash
-python manage.py migrate
-python manage.py seed_employees --count 250000 --batch-size 5000
-python manage.py runserver
+PORT=4000
+MONGODB_URI=mongodb://127.0.0.1:27017/invoice_studio
+CLIENT_ORIGIN=http://localhost:5173
 ```
 
-For local development without MySQL, leave `DB_ENGINE` unset and Django will use SQLite.
+Frontend build:
+
+```bash
+VITE_API_URL=http://localhost:4000
+```
+
+When deploying only the frontend, keep the backend running locally and build the frontend with `VITE_API_URL=http://localhost:4000`.
+
+## Frontend Deployment
+
+This repo includes both `vercel.json` and `netlify.toml`.
+
+Vercel:
+
+1. Import the GitHub repository.
+2. Framework preset: Vite.
+3. Build command: `npm run build`.
+4. Output directory: `dist`.
+5. Environment variable: `VITE_API_URL=http://localhost:4000`.
+
+Netlify:
+
+1. Import the GitHub repository.
+2. Build command: `npm run build`.
+3. Publish directory: `dist`.
+4. Environment variable: `VITE_API_URL=http://localhost:4000`.
 
 ## API
 
-- `GET /api/employees/?page=1&page_size=50`
-- `GET /api/employees/?search=it&joined_from=2022-01-01&joined_to=2025-12-31`
-- `GET /api/employees/export/csv/`
-- `GET /api/employees/export/xlsx/`
-- `GET /api/employees/export/pdf/`
+- `GET /api/clients`
+- `POST /api/clients`
+- `PATCH /api/clients/:id`
+- `DELETE /api/clients/:id`
+- `GET /api/invoices?status=&clientId=&from=&to=`
+- `POST /api/invoices`
+- `GET /api/invoices/:id`
+- `PATCH /api/invoices/:id/status`
+- `GET /api/profile`
+- `POST /api/profile/logo`
 
-The PDF export is capped to the first 1,000 filtered rows to keep the generated document practical. CSV and Excel stream rows from the database using queryset iteration.
+## Data Model Notes
 
-## Performance Notes
+- `Client` documents are scoped by `userId`.
+- `Invoice` documents reference `Client` by ObjectId and store line items as embedded subdocuments.
+- Invoice totals are calculated server-side in a Mongoose validation hook.
+- Invoice numbers are unique per user with a compound index on `{ userId, invoiceNumber }`.
+- `UserProfile` stores the current user role and premium logo metadata.
 
-- Use MySQL in production by setting `DB_ENGINE=mysql` and the `MYSQL_*` variables.
-- Use Redis by setting `REDIS_URL`; otherwise local-memory cache is used.
-- Employee queries use `select_related('department', 'position')`.
-- Fields used by search/filtering such as email, phone number, names, department, position, and joining date are indexed.
-- Large inserts use `bulk_create()` in batches.
+## Security And Scope Notes
+
+- This project uses mock header-based auth for assessment simplicity, but all database queries are scoped to `req.user.id`.
+- Premium logo upload is enforced by backend middleware, not only by hiding the frontend control.
+- Uploaded logo files are limited by MIME type and file size.
+- Client and invoice inputs are validated on both frontend and backend.
+
+## Submission Links
+
+- GitHub repo: add your repository URL here after pushing.
+- Deployed frontend: add your Vercel, Netlify, or GitHub Pages URL here after deployment.
