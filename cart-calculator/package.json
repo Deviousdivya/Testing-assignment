@@ -1,0 +1,12 @@
+{
+  "name": "cart-calculator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Order total calculator for a small online store.",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
